@@ -1,0 +1,19 @@
+TFT_eFEX	KEYWORD1
+
+// Insert one tab character between function name and KEYWORD2
+// The easy way to do this is to copy and paste a line, then edit.
+
+drawBezier	KEYWORD2
+drawBezierSegment	KEYWORD2
+
+drawBMP	KEYWORD2
+
+drawJpeg	KEYWORD2
+jpegInfo	KEYWORD2
+
+drawProgressBar
+
+luminance	KEYWORD2
+rainbowColor	KEYWORD2
+
+listSPIFFS	KEYWORD2
