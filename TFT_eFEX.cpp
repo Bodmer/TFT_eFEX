@@ -91,6 +91,7 @@ void TFT_eFEX::drawBezierSegment(int32_t x0, int32_t y0, int32_t x1, int32_t y1,
     if (sx * (int32_t)sx + sy * (int32_t)sy > xx * xx + yy * yy) {
       x2 = x0; x0 = sx + x1; y2 = y0; y0 = sy + y1; cur = -cur;
     }
+    _tft->startWrite();
     if (cur != 0) {
       xx += sx; xx *= sx = x0 < x2 ? 1 : -1;
       yy += sy; yy *= sy = y0 < y2 ? 1 : -1;
@@ -103,7 +104,11 @@ void TFT_eFEX::drawBezierSegment(int32_t x0, int32_t y0, int32_t x1, int32_t y1,
       xx += xx; yy += yy; err = dx + dy + xy;
       do {
         _tft->drawPixel(x0, y0, color);
-        if (x0 == x2 && y0 == y2) return;
+        if (x0 == x2 && y0 == y2)
+        {
+          _tft->endWrite();
+          return;
+        }
         y1 = 2 * err < dx;
         if (2 * err > dy) {
           x0 += sx;
@@ -119,6 +124,7 @@ void TFT_eFEX::drawBezierSegment(int32_t x0, int32_t y0, int32_t x1, int32_t y1,
       } while (dy < dx );
     }
     _tft->drawLine(x0, y0, x2, y2, color);
+    _tft->endWrite();
   }
   else Serial.println("Bad coordinate set - non-sequential!");
 }
@@ -649,7 +655,7 @@ void TFT_eFEX::listSPIFFS(void) {
 
   fs::Dir dir = SPIFFS.openDir("/"); // Root directory
 
-  static const char line[] PROGMEM =  "=====================================";
+  static const char line[] PROGMEM =  "================================================";
   Serial.println(FPSTR(line));
   Serial.println(F("  File name               Size"));
   Serial.println(FPSTR(line));
@@ -678,7 +684,7 @@ void TFT_eFEX::listSPIFFS(void) {
 // TODO: add sub directories
 void TFT_eFEX::listSPIFFS(void) {
   Serial.println(F("\r\nListing SPIFFS files:"));
-  static const char line[] PROGMEM =  "======================================";
+  static const char line[] PROGMEM =  "=================================================";
 
   Serial.println(FPSTR(line));
   Serial.println(F("  File name                Size"));
@@ -733,3 +739,449 @@ void TFT_eFEX::listSPIFFS(void) {}
 ** Function name:           
 ** Description:             
 ***************************************************************************************/
+
+//====================================================================================
+//                           Screen server call with no filename
+//====================================================================================
+// Start a screen dump server (serial or network) - no filename specified
+bool TFT_eFEX::screenServer(void)
+{
+  // With no filename the screenshot will be saved with a default name e.g. tft_screen_#.xxx
+  // where # is a number 0-9 and xxx is a file type specified below
+  return screenServer(DEFAULT_FILENAME);
+}
+
+//====================================================================================
+//                           Screen server call with filename
+//====================================================================================
+// Start a screen dump server (serial or network) - filename specified
+bool TFT_eFEX::screenServer(String filename)
+{
+  delay(0); // Equivalent to yield() for ESP8266;
+
+  boolean result = serialScreenServer(filename); // Screenshot serial port server
+  //boolean result = wifiScreenServer(filename);   // Screenshot WiFi UDP port server (WIP)
+
+  delay(0); // Equivalent to yield()
+
+  //Serial.println();
+  //if (result) Serial.println(F("Screen dump passed :-)"));
+  //else        Serial.println(F("Screen dump failed :-("));
+
+  return result;
+}
+
+//====================================================================================
+//                Serial server function that sends the data to the client
+//====================================================================================
+bool TFT_eFEX::serialScreenServer(String filename)
+{
+  // Precautionary receive buffer garbage flush for 50ms
+  uint32_t clearTime = millis() + 50;
+  while ( millis() < clearTime && Serial.read() >= 0) delay(0); // Equivalent to yield() for ESP8266;
+
+  boolean wait = true;
+  uint32_t lastCmdTime = millis();     // Initialise start of command time-out
+
+  // Wait for the starting flag with a start time-out
+  while (wait)
+  {
+    delay(0); // Equivalent to yield() for ESP8266;
+    // Check serial buffer
+    if (Serial.available() > 0) {
+      // Read the command byte
+      uint8_t cmd = Serial.read();
+      // If it is 'S' (start command) then clear the serial buffer for 100ms and stop waiting
+      if ( cmd == 'S' ) {
+        // Precautionary receive buffer garbage flush for 50ms
+        clearTime = millis() + 50;
+        while ( millis() < clearTime && Serial.read() >= 0) delay(0); // Equivalent to yield() for ESP8266;
+
+        wait = false;           // No need to wait anymore
+        lastCmdTime = millis(); // Set last received command time
+
+        // Send screen size etc using a simple header with delimiters for client checks
+        sendParameters(filename);
+      }
+    }
+    else
+    {
+      // Check for time-out
+      if ( millis() > lastCmdTime + START_TIMEOUT) return false;
+    }
+  }
+
+  uint8_t color[3 * NPIXELS]; // RGB and 565 format color buffer for N pixels
+
+  // Send all the pixels on the whole screen
+  for ( uint32_t y = 0; y < _tft->height(); y++)
+  {
+    // Increment x by NPIXELS as we send NPIXELS for every byte received
+    for ( uint32_t x = 0; x < _tft->width(); x += NPIXELS)
+    {
+      delay(0); // Equivalent to yield() for ESP8266;
+
+      // Wait here for serial data to arrive or a time-out elapses
+      while ( Serial.available() == 0 )
+      {
+        if ( millis() > lastCmdTime + PIXEL_TIMEOUT) return false;
+        delay(0); // Equivalent to yield() for ESP8266;
+      }
+
+      // Serial data must be available to get here, read 1 byte and
+      // respond with N pixels, i.e. N x 3 RGB bytes or N x 2 565 format bytes
+      if ( Serial.read() == 'X' ) {
+        // X command byte means abort, so clear the buffer and return
+        clearTime = millis() + 50;
+        while ( millis() < clearTime && Serial.read() >= 0) delay(0); // Equivalent to yield() for ESP8266;
+        return false;
+      }
+      // Save arrival time of the read command (for later time-out check)
+      lastCmdTime = millis();
+
+#if defined BITS_PER_PIXEL && BITS_PER_PIXEL >= 24 && NPIXELS > 1
+      // Fetch N RGB pixels from x,y and put in buffer
+      _tft->readRectRGB(x, y, NPIXELS, 1, color);
+      // Send buffer to client
+      Serial.write(color, 3 * NPIXELS); // Write all pixels in the buffer
+#else
+      // Fetch N 565 format pixels from x,y and put in buffer
+      if (NPIXELS > 1) _tft->readRect(x, y, NPIXELS, 1, (uint16_t *)color);
+      else
+      {
+        uint16_t c = _tft->readPixel(x, y);
+        color[0] = c>>8;
+        color[1] = c & 0xFF;  // Swap bytes
+      }
+      // Send buffer to client
+      Serial.write(color, 2 * NPIXELS); // Write all pixels in the buffer
+#endif
+    }
+  }
+
+  Serial.flush(); // Make sure all pixel bytes have been despatched
+
+  return true;
+}
+
+//====================================================================================
+//    Send screen size etc using a simple header with delimiters for client checks
+//====================================================================================
+void TFT_eFEX::sendParameters(String filename)
+{
+  Serial.write('W'); // Width
+  Serial.write(_tft->width()  >> 8);
+  Serial.write(_tft->width()  & 0xFF);
+
+  Serial.write('H'); // Height
+  Serial.write(_tft->height() >> 8);
+  Serial.write(_tft->height() & 0xFF);
+
+  Serial.write('Y'); // Bits per pixel (16 or 24)
+  if (NPIXELS > 1) Serial.write(BITS_PER_PIXEL);
+  else Serial.write(16); // readPixel() only provides 16 bit values
+
+  Serial.write('?'); // Filename next
+  Serial.print(filename);
+
+  Serial.write('.'); // End of filename marker
+
+  Serial.write(FILE_EXT); // Filename extension identifier
+
+  Serial.write(*FILE_TYPE); // First character defines file type j,b,p,t
+}
+
+
+/**************************************************************************/
+//
+//    Bodmer added native JPEG decoder functions from ESP32 rom utility
+//    Source: https://github.com/espressif/WROVER_KIT_LCD
+//
+/**************************************************************************/
+#ifdef ESP32
+
+// Include these in header file
+// #include "rom/tjpgd.h"
+// #include "FS.h"
+
+#define jpgColor(c) (((uint16_t)(((uint8_t*)(c))[0] & 0xF8) << 8) | \
+                     ((uint16_t)(((uint8_t*)(c))[1] & 0xFC) << 3) | \
+                     ((((uint8_t*)(c))[2] & 0xF8) >> 3))
+
+#if ARDUHAL_LOG_LEVEL >= ARDUHAL_LOG_LEVEL_ERROR
+const char * jd_errors[] = {
+    "Succeeded",
+    "Interrupted by output function",
+    "Device error or wrong termination of input stream",
+    "Insufficient memory pool for the image",
+    "Insufficient stream input buffer",
+    "Parameter error",
+    "Data format error",
+    "Right format but not supported",
+    "Not supported JPEG standard"
+};
+#endif
+
+// Struct to pass parameters to jpeg decoder
+typedef struct {
+        uint16_t x;
+        uint16_t y;
+        uint16_t maxWidth;
+        uint16_t maxHeight;
+        uint16_t offX;
+        uint16_t offY;
+        jpeg_div_t scale;
+        const void * src;
+        size_t len;
+        size_t index;
+        TFT_eSPI * tft;
+        uint16_t outWidth;
+        uint16_t outHeight;
+} jpg_file_decoder_t;
+
+/**************************************************************************/
+//
+//    JPEG decoder support function prototypes
+//
+/**************************************************************************/
+static uint32_t jpgReadFile(JDEC *decoder, uint8_t *buf, uint32_t len);
+static uint32_t jpgRead(JDEC *decoder, uint8_t *buf, uint32_t len);
+static uint32_t jpgWrite(JDEC *decoder, void *bitmap, JRECT *rect);
+static bool     jpgDecode(jpg_file_decoder_t * jpeg, uint32_t(* reader)(JDEC*,uint8_t *, uint32_t));
+
+
+/**************************************************************************/
+/*!
+    @brief  Decode an array stored FLASH in memory (ESP32 only)
+    @param    Array name
+    @param    Size of array, use sizeof(array_name)
+    @param    Display x coord to draw at
+    @param    Display y coord to draw at
+    @param    Optional: Unscaled jpeg maximum width in pixels
+    @param    Optional: Unscaled jpeg maximum height in pixels
+    @param    Optional: Unscaled jpeg start x coordinate offset in jpeg
+    @param    Optional: Unscaled jpeg start y coordinate offset in jpeg
+    @param    Optional: Scale factor 0-4 (type jpeg_div_t)
+    @return   true if decoded, else false
+*/
+/**************************************************************************/
+// e.g tft.drawJpg(EagleEye, sizeof(EagleEye), 0, 10);
+// Where EagleEye is an array of bytes in PROGMEM:
+// const uint8_t EagleEye[] PROGMEM = {...};
+bool TFT_eFEX::drawJpg(const uint8_t * jpg_data, size_t jpg_len, uint16_t x, uint16_t y, uint16_t maxWidth, uint16_t maxHeight, uint16_t offX, uint16_t offY, jpeg_div_t scale){
+
+    maxWidth = maxWidth>>(uint8_t)scale;
+    maxHeight = maxHeight>>(uint8_t)scale;
+
+    if((x + maxWidth) > width() || (y + maxHeight) > height()){
+        log_e("Bad dimensions given");
+        return false;
+    }
+
+    jpg_file_decoder_t jpeg;
+
+    if(!maxWidth){
+        maxWidth = width() - x;
+    }
+    if(!maxHeight){
+        maxHeight = height() - y;
+    }
+
+    jpeg.src = jpg_data;
+    jpeg.len = jpg_len;
+    jpeg.index = 0;
+    jpeg.x = x;
+    jpeg.y = y;
+    jpeg.maxWidth = maxWidth;
+    jpeg.maxHeight = maxHeight;
+    jpeg.offX = offX>>(uint8_t)scale;
+    jpeg.offY = offY>>(uint8_t)scale;
+    jpeg.scale = scale;
+    jpeg.tft = this;
+
+    return jpgDecode(&jpeg, jpgRead);
+}
+
+/**************************************************************************/
+/*!
+    @brief  Decode an array stored as a file (ESP32 only)
+    @param    Filing system, e.g. SPIFFS
+    @param    File name, precede with / for SPIFFS
+    @param    Display x coord to draw at
+    @param    Display y coord to draw at
+    @param    Optional: Unscaled jpeg maximum width in pixels
+    @param    Optional: Unscaled jpeg maximum height in pixels
+    @param    Optional: Unscaled jpeg start x coordinate offset in jpeg
+    @param    Optional: Unscaled jpeg start y coordinate offset in jpeg
+    @param    Optional: Scale factor 0-4 (type jpeg_div_t)
+    @return   true if decoded, else false
+*/
+/**************************************************************************/
+// e.g. tft.drawJpgFile(SPIFFS, "/EagleEye.jpg", 0, 10);
+bool TFT_eFEX::drawJpgFile(fs::FS &fs, const char * path, uint16_t x, uint16_t y, uint16_t maxWidth, uint16_t maxHeight, uint16_t offX, uint16_t offY, jpeg_div_t scale){
+
+    maxWidth = maxWidth>>(uint8_t)scale;
+    maxHeight = maxHeight>>(uint8_t)scale;
+
+    if((x + maxWidth) > width() || (y + maxHeight) > height()){
+        log_e("Bad dimensions given");
+        return false;
+    }
+
+    fs::File file = fs.open(path, "r");
+    if(!file){
+        log_e("Failed to open file for reading");
+        return false;
+    }
+
+    jpg_file_decoder_t jpeg;
+
+    if(!maxWidth){
+        maxWidth = width() - x;
+    }
+    if(!maxHeight){
+        maxHeight = height() - y;
+    }
+
+    jpeg.src = &file;
+    jpeg.len = file.size();
+    jpeg.index = 0;
+    jpeg.x = x;
+    jpeg.y = y;
+    jpeg.maxWidth = maxWidth;
+    jpeg.maxHeight = maxHeight;
+    jpeg.offX = offX>>(uint8_t)scale;
+    jpeg.offY = offY>>(uint8_t)scale;
+    jpeg.scale = scale;
+    jpeg.tft = this;
+
+    bool result = jpgDecode(&jpeg, jpgReadFile);
+
+    file.close();
+    return result;
+}
+
+/**************************************************************************/
+//
+//    JPEG decoder support functions
+//
+/**************************************************************************/
+static uint32_t jpgReadFile(JDEC *decoder, uint8_t *buf, uint32_t len){
+    jpg_file_decoder_t * jpeg = (jpg_file_decoder_t *)decoder->device;
+    fs::File * file = (fs::File *)jpeg->src;
+    if(buf){
+        return file->read(buf, len);
+    } else {
+        file->seek(len, fs::SeekCur);
+    }
+    return len;
+}
+
+static uint32_t jpgRead(JDEC *decoder, uint8_t *buf, uint32_t len){
+    jpg_file_decoder_t * jpeg = (jpg_file_decoder_t *)decoder->device;
+    if(buf){
+        memcpy(buf, (const uint8_t *)jpeg->src + jpeg->index, len);
+    }
+    jpeg->index += len;
+    return len;
+}
+
+static uint32_t jpgWrite(JDEC *decoder, void *bitmap, JRECT *rect){
+    jpg_file_decoder_t * jpeg = (jpg_file_decoder_t *)decoder->device;
+    uint16_t x = rect->left;
+    uint16_t y = rect->top;
+    uint16_t w = rect->right + 1 - x;
+    uint16_t h = rect->bottom + 1 - y;
+    uint16_t oL = 0, oR = 0;
+    uint8_t *data = (uint8_t *)bitmap;
+
+    if(rect->right < jpeg->offX){
+        return 1;
+    }
+    if(rect->left >= (jpeg->offX + jpeg->outWidth)){
+        return 1;
+    }
+    if(rect->bottom < jpeg->offY){
+        return 1;
+    }
+    if(rect->top >= (jpeg->offY + jpeg->outHeight)){
+        return 1;
+    }
+    if(rect->top < jpeg->offY){
+        uint16_t linesToSkip = jpeg->offY - rect->top;
+        data += linesToSkip * w * 3;
+        h -= linesToSkip;
+        y += linesToSkip;
+    }
+    if(rect->bottom >= (jpeg->offY + jpeg->outHeight)){
+        uint16_t linesToSkip = (rect->bottom + 1) - (jpeg->offY + jpeg->outHeight);
+        h -= linesToSkip;
+    }
+    if(rect->left < jpeg->offX){
+        oL = jpeg->offX - rect->left;
+    }
+    if(rect->right >= (jpeg->offX + jpeg->outWidth)){
+        oR = (rect->right + 1) - (jpeg->offX + jpeg->outWidth);
+    }
+
+    uint16_t pixBuf[32];
+    uint8_t pixIndex = 0;
+    uint16_t line;
+
+    jpeg->tft->startWrite();
+    jpeg->tft->setAddrWindow(x - jpeg->offX + jpeg->x + oL, y - jpeg->offY + jpeg->y, w - (oL + oR), h);
+
+    while(h--){
+        data += 3 * oL;
+        line = w - (oL + oR);
+        while(line--){
+            pixBuf[pixIndex++] = jpgColor(data);
+            data += 3;
+            if(pixIndex == 32){
+                jpeg->tft->pushColors(pixBuf, 32);
+                pixIndex = 0;
+            }
+        }
+        data += 3 * oR;
+    }
+    if(pixIndex){
+        jpeg->tft->pushColors(pixBuf, pixIndex);
+    }
+    jpeg->tft->endWrite();
+    return 1;
+}
+
+static bool jpgDecode(jpg_file_decoder_t * jpeg, uint32_t(* reader)(JDEC*,uint8_t *, uint32_t)){
+    static uint8_t work[3100];
+    JDEC decoder;
+
+    JRESULT jres = jd_prepare(&decoder, reader, work, 3100, jpeg);
+    if(jres != JDR_OK){
+        log_e("jd_prepare failed! %s", jd_errors[jres]);
+        return false;
+    }
+
+    uint16_t jpgWidth = decoder.width / (1 << (uint8_t)(jpeg->scale));
+    uint16_t jpgHeight = decoder.height / (1 << (uint8_t)(jpeg->scale));
+
+    if(jpeg->offX >= jpgWidth || jpeg->offY >= jpgHeight){
+        log_e("Offset Outside of JPEG size");
+        return false;
+    }
+
+    size_t jpgMaxWidth = jpgWidth - jpeg->offX;
+    size_t jpgMaxHeight = jpgHeight - jpeg->offY;
+
+    jpeg->outWidth = (jpgMaxWidth > jpeg->maxWidth)?jpeg->maxWidth:jpgMaxWidth;
+    jpeg->outHeight = (jpgMaxHeight > jpeg->maxHeight)?jpeg->maxHeight:jpgMaxHeight;
+
+    jres = jd_decomp(&decoder, jpgWrite, (uint8_t)jpeg->scale);
+    if(jres != JDR_OK){
+        log_e("jd_decomp failed! %s", jd_errors[jres]);
+        return false;
+    }
+
+    return true;
+}
+
+#endif // ESP32 only

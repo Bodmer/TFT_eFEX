@@ -8,7 +8,7 @@ The extra functions are:
   void     drawBezier(int32_t x0, int32_t y0, int32_t x1, int32_t y1, int32_t x2, int32_t y2, uint16_t color);  
   void     drawBezierSegment(int32_t x0, int32_t y0, int32_t x1, int32_t y1, int32_t x2, int32_t y2, uint16_t color);
 
-           // Draw a bitmap stored in SPIFFS to the TFT or a Sprite if a Sprite instance is included
+           // Draw a bitmap (bmp file) stored in SPIFFS to the TFT or a Sprite if a Sprite instance is included
   void     drawBmp(String filename, int16_t x, int16_t y, TFT_eSprite *_spr = nullptr);
 //To do:  void     drawBmp(const char *filename, int16_t x, int16_t y, TFT_eSprite *_spr = nullptr);
 
@@ -34,3 +34,15 @@ The extra functions are:
 
            // List files in the SPIFFS for ESP8266 or ESP32
   void     listSPIFFS(void);
+
+           // Screen server call with or without a filename for the resultant PC stored image
+  bool     screenServer(void);
+  bool     screenServer(String filename);
+
+For ESP32 only (see "Jpeg_ESP32" example):
+
+           // Draw a jpeg stored in an array using the faster ESP32 native decoder, can crop and scale
+  bool     drawJpg(const uint8_t * jpg_data, size_t jpg_len, uint16_t x=0, uint16_t y=0, uint16_t maxWidth=0, uint16_t maxHeight=0, uint16_t offX=0, uint16_t offY=0, jpeg_div_t scale=JPEG_DIV_NONE);
+
+           // Draw a jpeg stored in a file using the faster ESP32 native decoder, can crop and scale (Tested with SPIFFS file)
+  bool     drawJpgFile(fs::FS &fs, const char * path, uint16_t x=0, uint16_t y=0, uint16_t maxWidth=0, uint16_t maxHeight=0, uint16_t offX=0, uint16_t offY=0, jpeg_div_t scale=JPEG_DIV_NONE);

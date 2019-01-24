@@ -17,8 +17,48 @@
 #endif
 
 #ifdef ESP32
-  #include "SPIFFS.h" // ESP32 only
+  #include "rom/tjpgd.h" // For native ESP32 jpeg decoder
+  #include "SPIFFS.h"    // ESP32 only
 #endif
+
+// Screen server setup
+
+#define PIXEL_TIMEOUT 100     // 100ms Time-out between pixel requests
+#define START_TIMEOUT 10000   // 10s Maximum time to wait at start transfer
+
+#define BITS_PER_PIXEL 16     // 24 for RGB colour format, 16 for 565 colour format
+
+// File names must be alpha-numeric characters (0-9, a-z, A-Z) or "/" underscore "_"
+// other ascii characters are stripped out by client, including / generates
+// sub-directories
+#define DEFAULT_FILENAME "tft_screenshots/screenshot" // In case none is specified
+#define FILE_TYPE "png"       // jpg, bmp, png, tif are valid
+
+// Filename extension
+// '#' = add incrementing number, '@' = add timestamp, '%' add millis() timestamp,
+// '*' = add nothing
+// '@' and '%' will generate new unique filenames, so beware of cluttering up your
+// hard drive with lots of images! The PC client sketch is set to limit the number of
+// saved images to 1000 and will then prompt for a restart.
+#define FILE_EXT  '@'         
+
+// Number of pixels to send in a burst (minimum of 1), no benefit above 8
+// NPIXELS values and render times:
+// NPIXELS 1 = use readPixel() = >5s and 16 bit pixels only
+// NPIXELS >1 using rectRead() 2 = 1.75s, 4 = 1.68s, 8 = 1.67s
+#define NPIXELS 1  // Must be integer division of both TFT width and TFT height
+
+#ifdef ESP32 // For native jpeg decoder
+typedef enum {
+    JPEG_DIV_NONE,
+    JPEG_DIV_2,
+    JPEG_DIV_4,
+    JPEG_DIV_8,
+    JPEG_DIV_MAX
+} jpeg_div_t;
+#endif
+
+// End of screens erver setup
 
 class TFT_eFEX : public TFT_eSPI {
 
@@ -34,13 +74,13 @@ class TFT_eFEX : public TFT_eSPI {
   void     drawBmp(String filename, int16_t x, int16_t y, TFT_eSprite *_spr = nullptr);
 //To do:  void     drawBmp(const char *filename, int16_t x, int16_t y, TFT_eSprite *_spr = nullptr);
 
-           // Draw a Jpeg to the TFT, or to a Sprite if a Sprite instance is included
+           // Draw a Jpeg to the TFT, or to a Sprite if a Sprite instance is included (uses JPEGDecoder library)
   void     drawJpeg(String filename, int16_t xpos, int16_t ypos, TFT_eSprite *_spr = nullptr);
 
-           // Draw a Jpeg stored in a program memory array to the TFT
+           // Draw a Jpeg stored in a program memory array to the TFT (uses JPEGDecoder library)
   void     drawJpeg(const uint8_t arrayname[], uint32_t array_size, int16_t xpos, int16_t ypos);
 
-           // List information about a Jpeg file to the Serial port
+           // List information about a Jpeg file to the Serial port (uses JPEGDecoder library)
   void     jpegInfo(String filename);
   void     jpegInfo(const uint8_t arrayname[], uint32_t array_size);
 
@@ -57,6 +97,17 @@ class TFT_eFEX : public TFT_eSPI {
            // List files in the SPIFFS for ESP8266 or ESP32
   void     listSPIFFS(void);
 
+           // Screen server call with or without a filename for PC stored image file
+  bool     screenServer(void);
+  bool     screenServer(String filename);
+
+#ifdef ESP32
+           // Draw a jpeg stored in an array using the ESP32 native decoder, can crop and scale
+  bool     drawJpg(const uint8_t * jpg_data, size_t jpg_len, uint16_t x=0, uint16_t y=0, uint16_t maxWidth=0, uint16_t maxHeight=0, uint16_t offX=0, uint16_t offY=0, jpeg_div_t scale=JPEG_DIV_NONE);
+           // Draw a jpeg stored in a file using the ESP32 native decoder, can crop and scale (Tested with SPIFFS file)
+  bool     drawJpgFile(fs::FS &fs, const char * path, uint16_t x=0, uint16_t y=0, uint16_t maxWidth=0, uint16_t maxHeight=0, uint16_t offX=0, uint16_t offY=0, jpeg_div_t scale=JPEG_DIV_NONE);
+#endif
+
   private:
 
   TFT_eSPI *_tft;
@@ -65,6 +116,8 @@ class TFT_eFEX : public TFT_eSPI {
   uint16_t read16(fs::File &f);
   uint32_t read32(fs::File &f);
 
+  bool     serialScreenServer(String filename);
+  void     sendParameters(String filename);
  protected:
 
 };
