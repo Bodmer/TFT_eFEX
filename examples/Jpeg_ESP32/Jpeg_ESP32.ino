@@ -1,6 +1,6 @@
 /*====================================================================================
 
-    Test jpeg rendering with ESP32 and modified Adafruit_GFX and ILI9341 libraries
+    Test jpeg rendering with ESP32 and TFT_eSPI library using native jpeg decoder
 
   ==================================================================================*/
 
