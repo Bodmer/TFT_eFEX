@@ -27,7 +27,6 @@ The extra functions are:
 
            // Change the luminance of a defined colour
   uint16_t luminance(uint16_t color, uint8_t luminance);
-  
   uint16_t luminance(uint8_t red, uint8_t green, uint8_t blue, uint8_t luminance);
 
            // Return a rainbow colour for a spectrum value 0-192

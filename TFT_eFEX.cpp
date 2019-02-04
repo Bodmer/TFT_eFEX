@@ -431,20 +431,13 @@ void TFT_eFEX::drawJpeg(const uint8_t arrayname[], uint32_t array_size, int16_t 
         // copy pixels into a smaller block
         if (win_w != mcu_w)
         {
-          uint16_t *cImg;
-          int p = 0;
-          cImg = pImg + win_w;
-          for (int h = 1; h < win_h; h++)
+          for (int h = 1; h < win_h-1; h++)
           {
-            p += mcu_w;
-            for (int w = 0; w < win_w; w++)
-            {
-              *cImg = *(pImg + w + p);
-              cImg++;
-            }
+            memcpy(pImg + h * win_w, pImg + (h + 1) * mcu_w, win_w << 1);
           }
         }
-      _tft->pushImage(mcu_x, mcu_y, win_w, win_h, pImg);
+
+        _tft->pushImage(mcu_x, mcu_y, win_w, win_h, pImg);
       }
       else
       {
@@ -561,15 +554,15 @@ void TFT_eFEX::drawProgressBar(uint16_t x, uint16_t y, uint16_t w, uint16_t h, u
 uint16_t TFT_eFEX::luminance(uint16_t color, uint8_t luminance)
 {
   // Extract rgb colours and stretch range to 0 - 255
-  uint16_t r = (color & 0xF800) >> 8; r |= r >> 5;
-  uint16_t g = (color & 0x07E0) >> 3; g |= g >> 6;
-  uint16_t b = (color & 0x001F) << 3; b |= b >> 5;
+  uint16_t r = (color & 0xF800) >> 8; r |= (r >> 5);
+  uint16_t g = (color & 0x07E0) >> 3; g |= (g >> 6);
+  uint16_t b = (color & 0x001F) << 3; b |= (b >> 5);
 
-  b = ((b * (uint16_t)luminance)/255) & 0x00F8;
-  g = ((g * (uint16_t)luminance)/255) & 0x00FC;
-  r = ((r * (uint16_t)luminance)/255) & 0x00F8;
+  b = ((b * (uint16_t)luminance + 255) >> 8) & 0x00F8;
+  g = ((g * (uint16_t)luminance + 255) >> 8) & 0x00FC;
+  r = ((r * (uint16_t)luminance + 255) >> 8) & 0x00F8;
 
-  return (r << 8) | (g << 3) | b >> 3;
+  return (r << 8) | (g << 3) | (b >> 3);
 }
 
 
@@ -579,11 +572,11 @@ uint16_t TFT_eFEX::luminance(uint16_t color, uint8_t luminance)
 ***************************************************************************************/
 uint16_t TFT_eFEX::luminance(uint8_t red, uint8_t green, uint8_t blue, uint8_t luminance)
 {
-  uint16_t b = (((uint16_t)blue  * (uint16_t)luminance)/255) & 0x00F8;
-  uint16_t g = (((uint16_t)green * (uint16_t)luminance)/255) & 0x00FC;
-  uint16_t r = (((uint16_t)red   * (uint16_t)luminance)/255) & 0x00F8;
+  uint16_t b = (((uint16_t)blue  * (uint16_t)luminance + 255) >> 8) & 0x00F8;
+  uint16_t g = (((uint16_t)green * (uint16_t)luminance + 255) >> 8) & 0x00FC;
+  uint16_t r = (((uint16_t)red   * (uint16_t)luminance + 255) >> 8) & 0x00F8;
 
-  return (r << 8) | (g << 3) | b >> 3;
+  return (r << 8) | (g << 3) | (b >> 3);
 }
 
 
