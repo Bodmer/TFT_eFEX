@@ -54,7 +54,8 @@ The extra functions are:
   void     drawStringLTR(const char *string, int32_t *x, int32_t *y);
 
 
-For ESP32 only (see "Jpeg_ESP32" example):
+
+**For ESP32 only (see "Jpeg_ESP32" example):**
 
            // Draw a jpeg stored in an array using the faster ESP32 native decoder, can crop and scale
   bool     drawJpg(const uint8_t * jpg_data, size_t jpg_len, uint16_t x=0, uint16_t y=0, uint16_t maxWidth=0, uint16_t maxHeight=0, uint16_t offX=0, uint16_t offY=0, jpeg_div_t scale=JPEG_DIV_NONE);
