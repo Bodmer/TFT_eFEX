@@ -5,12 +5,12 @@ An Arduino IDE library that provides extra functions for the TFT_eSPI library.
 The extra functions are:
 
            // Draw a bezier curve of a defined colour between specified points
-  void     drawBezier(int32_t x0, int32_t y0, int32_t x1, int32_t y1, int32_t x2, int32_t y2, uint16_t color);  
+  void     drawBezier(int32_t x0, int32_t y0, int32_t x1, int32_t y1, int32_t x2, int32_t y2, uint16_t color); 
+ 
   void     drawBezierSegment(int32_t x0, int32_t y0, int32_t x1, int32_t y1, int32_t x2, int32_t y2, uint16_t color);
 
            // Draw a bitmap (bmp file) stored in SPIFFS to the TFT or a Sprite if a Sprite instance is included
   void     drawBmp(String filename, int16_t x, int16_t y, TFT_eSprite *_spr = nullptr);
-//To do:  void     drawBmp(const char *filename, int16_t x, int16_t y, TFT_eSprite *_spr = nullptr);
 
            // Draw a Jpeg to the TFT, or to a Sprite if a Sprite instance is included
   void     drawJpeg(String filename, int16_t xpos, int16_t ypos, TFT_eSprite *_spr = nullptr);
@@ -20,6 +20,7 @@ The extra functions are:
 
            // List information about a Jpeg file to the Serial port
   void     jpegInfo(String filename);
+
   void     jpegInfo(const uint8_t arrayname[], uint32_t array_size);
 
            // Draw a progress bar on the screen
@@ -27,6 +28,7 @@ The extra functions are:
 
            // Change the luminance of a defined colour
   uint16_t luminance(uint16_t color, uint8_t luminance);
+
   uint16_t luminance(uint8_t red, uint8_t green, uint8_t blue, uint8_t luminance);
 
            // Return a rainbow colour for a spectrum value 0-191
@@ -37,13 +39,18 @@ The extra functions are:
 
            // Screen server call with or without a filename for the resultant PC stored image
   bool     screenServer(void);
+
   bool     screenServer(String filename);
 
            // Support Right To Left (RTL) character rendering (see example)
   void     setCursorRTL(int32_t cx, int32_t cy);
+
   void     drawStringRTL(const String& string);
+
   void     drawStringRTL(const char *string, int32_t *x, int32_t *y);
+
   void     drawStringLTR(const String& string);
+
   void     drawStringLTR(const char *string, int32_t *x, int32_t *y);
 
 
