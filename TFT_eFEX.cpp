@@ -324,17 +324,9 @@ void TFT_eFEX::drawJpeg(String filename, int16_t xpos, int16_t ypos, TFT_eSprite
         // copy pixels into a smaller block
         if (win_w != mcu_w)
         {
-          uint16_t *cImg;
-          int p = 0;
-          cImg = pImg + win_w;
-          for (int h = 1; h < win_h; h++)
+          for (int h = 1; h < win_h-1; h++)
           {
-            p += mcu_w;
-            for (int w = 0; w < win_w; w++)
-            {
-              *cImg = *(pImg + w + p);
-              cImg++;
-            }
+            memcpy(pImg + h * win_w, pImg + (h + 1) * mcu_w, win_w << 1);
           }
         }
 
@@ -648,7 +640,7 @@ void TFT_eFEX::listSPIFFS(void) {
 
   fs::Dir dir = SPIFFS.openDir("/"); // Root directory
 
-  static const char line[] PROGMEM =  "================================================";
+  static const char line[] PROGMEM =  "=================================================";
   Serial.println(FPSTR(line));
   Serial.println(F("  File name               Size"));
   Serial.println(FPSTR(line));
@@ -656,12 +648,14 @@ void TFT_eFEX::listSPIFFS(void) {
   while (dir.next()) {
     String fileName = dir.fileName();
     Serial.print(fileName);
-    int spaces = 21 - fileName.length(); // Tabulate nicely
+    int spaces = 33 - fileName.length(); // Tabulate nicely
+    if (spaces < 1) spaces = 1;
     while (spaces--) Serial.print(" ");
 
     fs::File f = dir.openFile("r");
     String fileSize = (String) f.size();
     spaces = 10 - fileSize.length(); // Tabulate nicely
+    if (spaces < 1) spaces = 1;
     while (spaces--) Serial.print(" ");
     Serial.println(fileSize + " bytes");
   }
@@ -708,7 +702,8 @@ void TFT_eFEX::listSPIFFS(void) {
       if (spaces < 1) spaces = 1;
       while (spaces--) Serial.print(" ");
       String fileSize = (String) file.size();
-      spaces = 8 - fileSize.length(); // Tabulate nicely
+      spaces = 10 - fileSize.length(); // Tabulate nicely
+      if (spaces < 1) spaces = 1;
       while (spaces--) Serial.print(" ");
       Serial.println(fileSize + " bytes");
     }
@@ -729,9 +724,170 @@ void TFT_eFEX::listSPIFFS(void) {}
 
 
 /***************************************************************************************
-** Function name:           
-** Description:             
+** Function name:           setCursorRTL
+** Description:             Set the RTL cursor position
 ***************************************************************************************/
+// Set the RTL cursor position
+void TFT_eFEX::setCursorRTL(int32_t cx, int32_t cy)
+{
+  rtl_cursorX = cx;
+  rtl_cursorY = cy;
+}
+
+
+/***************************************************************************************
+** Function name:           drawStringRTL
+** Description:             Draw the string RTL and update cursor coordinates
+***************************************************************************************/
+void TFT_eFEX::drawStringRTL(const String& string)
+{
+  int16_t len = string.length() + 2;
+  char sbuffer[len];
+  string.toCharArray(sbuffer, len);
+  drawStringRTL(sbuffer, &rtl_cursorX, &rtl_cursorY);
+}
+
+
+/***************************************************************************************
+** Function name:           drawStringRTL
+** Description:             Draw the string RTL at defined coordinates
+***************************************************************************************/
+// Must call with variables, &x and &y
+void TFT_eFEX::drawStringRTL(const char *string, int32_t *x, int32_t *y)
+{
+  int32_t poX = *x;
+  int32_t poY = *y;
+
+  int16_t len = strlen(string);
+
+  if (_tft->fontLoaded)
+  {
+    uint8_t datum = _tft->getTextDatum();
+    int16_t cx = _tft->getCursorX();
+    int16_t cy = _tft->getCursorY();
+    _tft->setTextDatum(TL_DATUM);
+    uint16_t n = 0;
+    while (n < len)
+    {
+      uint16_t uniCode = _tft->decodeUTF8((uint8_t*)string, &n, len - n);
+      uint16_t gNum = 0;
+      bool found = _tft->getUnicodeIndex(uniCode, &gNum);
+
+      if (uniCode == 0x20)
+      {
+        poX -= _tft->gFont.spaceWidth;
+      }
+      else if (uniCode == '\n')
+      {
+        poX = _tft->width() - 1;
+        poY += _tft->gFont.yAdvance;
+      }
+
+      if (found)
+      {
+        poX -= ( _tft->gWidth[gNum] + _tft->gdX[gNum] );
+
+        if (poX < 0)
+        {
+          poX = _tft->width() - ( _tft->gWidth[gNum] + _tft->gdX[gNum] );
+          poY += _tft->gFont.yAdvance;
+          if (poY >= _tft->height()) poY = 0;
+        }
+
+        _tft->setCursor(poX, poY);
+        _tft->drawGlyph(uniCode);
+      }
+    }
+
+    _tft->setTextDatum(datum);
+    _tft->setCursor(cx, cx);
+
+    *x = poX;
+    *y = poY;
+  }
+}
+
+
+/***************************************************************************************
+** Function name:           setCursorLTR
+** Description:             Draw the string LTR and update cursor coordinates
+***************************************************************************************/
+void TFT_eFEX::drawStringLTR(const String& string)
+{
+  int16_t len = string.length() + 2;
+  char sbuffer[len];
+  string.toCharArray(sbuffer, len);
+  drawStringLTR(sbuffer, &rtl_cursorX, &rtl_cursorY);
+}
+
+
+/***************************************************************************************
+** Function name:           drawStringLTR
+** Description:             Draw the string LTR at defined coordinates
+***************************************************************************************/
+void TFT_eFEX::drawStringLTR(const char *string, int32_t *x, int32_t *y)
+{
+  int32_t poX = *x;
+  int32_t poY = *y;
+
+  int16_t len = strlen(string);
+
+  uint16_t pointCodes[len];
+  uint16_t index = 0;
+
+  if (_tft->fontLoaded)
+  {
+    uint8_t datum = _tft->getTextDatum();
+    int16_t cx = _tft->getCursorX();
+    int16_t cy = _tft->getCursorY();
+    _tft->setTextDatum(TL_DATUM);
+    uint16_t n = 0;
+
+    while (n < len)
+    {
+      uint16_t uniCode = _tft->decodeUTF8((uint8_t*)string, &n, len - n);
+      pointCodes[index++] = uniCode;
+    }
+
+    while (index--)
+    {
+      uint16_t gNum = 0;
+      bool found = _tft->getUnicodeIndex(pointCodes[index], &gNum);
+
+      if (pointCodes[index] == 0x20)
+      {
+        poX -= _tft->gFont.spaceWidth;
+      }
+      else if (pointCodes[index] == '\n')
+      {
+        poX = _tft->width() - 1;
+        poY += _tft->gFont.yAdvance;
+      }
+
+      if (found)
+      {
+        poX -= ( _tft->gWidth[gNum] + _tft->gdX[gNum] );
+
+        if (poX < 0)
+        {
+          poX = _tft->width() - ( _tft->gWidth[gNum] + _tft->gdX[gNum] );
+          poY += _tft->gFont.yAdvance;
+          if (poY >= _tft->height()) poY = 0;
+        }
+
+        _tft->setCursor(poX, poY);
+        _tft->drawGlyph(pointCodes[index]);
+      }
+    }
+
+    _tft->setTextDatum(datum);
+    _tft->setCursor(cx, cx);
+
+    *x = poX;
+    *y = poY;
+  }
+}
+
 
 //====================================================================================
 //                           Screen server call with no filename

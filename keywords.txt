@@ -17,3 +17,13 @@ luminance	KEYWORD2
 rainbowColor	KEYWORD2
 
 listSPIFFS	KEYWORD2
+
+setCursorRTL	KEYWORD2
+drawStringRTL	KEYWORD2
+drawStringRTL	KEYWORD2
+drawStringLTR	KEYWORD2
+drawStringLTR	KEYWORD2
+
+// ESP32 only
+drawJpg	KEYWORD2
+drawJpgFile	KEYWORD2

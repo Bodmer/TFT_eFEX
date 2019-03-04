@@ -97,6 +97,13 @@ class TFT_eFEX : public TFT_eSPI {
            // List files in the SPIFFS for ESP8266 or ESP32
   void     listSPIFFS(void);
 
+           // Support Right To Left (RTL) character rendering
+  void     setCursorRTL(int32_t cx, int32_t cy);
+  void     drawStringRTL(const String& string);
+  void     drawStringRTL(const char *string, int32_t *x, int32_t *y);
+  void     drawStringLTR(const String& string);
+  void     drawStringLTR(const char *string, int32_t *x, int32_t *y);
+
            // Screen server call with or without a filename for PC stored image file
   bool     screenServer(void);
   bool     screenServer(String filename);
@@ -119,5 +126,8 @@ class TFT_eFEX : public TFT_eSPI {
   bool     serialScreenServer(String filename);
   void     sendParameters(String filename);
  protected:
+
+int32_t rtl_cursorX = 0; // RTL cursor positions
+int32_t rtl_cursorY = 0;
 
 };
