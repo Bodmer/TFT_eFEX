@@ -29,7 +29,7 @@ The extra functions are:
   uint16_t luminance(uint16_t color, uint8_t luminance);
   uint16_t luminance(uint8_t red, uint8_t green, uint8_t blue, uint8_t luminance);
 
-           // Return a rainbow colour for a spectrum value 0-192
+           // Return a rainbow colour for a spectrum value 0-191
   uint16_t rainbowColor(uint8_t spectrum);
 
            // List files in the SPIFFS for ESP8266 or ESP32
@@ -39,10 +39,18 @@ The extra functions are:
   bool     screenServer(void);
   bool     screenServer(String filename);
 
+           // Support Right To Left (RTL) character rendering (see example)
+  void     setCursorRTL(int32_t cx, int32_t cy);
+  void     drawStringRTL(const String& string);
+  void     drawStringRTL(const char *string, int32_t *x, int32_t *y);
+  void     drawStringLTR(const String& string);
+  void     drawStringLTR(const char *string, int32_t *x, int32_t *y);
+
+
 For ESP32 only (see "Jpeg_ESP32" example):
 
            // Draw a jpeg stored in an array using the faster ESP32 native decoder, can crop and scale
   bool     drawJpg(const uint8_t * jpg_data, size_t jpg_len, uint16_t x=0, uint16_t y=0, uint16_t maxWidth=0, uint16_t maxHeight=0, uint16_t offX=0, uint16_t offY=0, jpeg_div_t scale=JPEG_DIV_NONE);
 
-           // Draw a jpeg stored in a file using the faster ESP32 native decoder, can crop and scale (Tested with SPIFFS file)
+           // Draw a jpeg stored in a file using the faster ESP32 native decoder, can crop and scale
   bool     drawJpgFile(fs::FS &fs, const char * path, uint16_t x=0, uint16_t y=0, uint16_t maxWidth=0, uint16_t maxHeight=0, uint16_t offX=0, uint16_t offY=0, jpeg_div_t scale=JPEG_DIV_NONE);
