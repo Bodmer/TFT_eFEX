@@ -324,9 +324,9 @@ void TFT_eFEX::drawJpeg(String filename, int16_t xpos, int16_t ypos, TFT_eSprite
         // copy pixels into a smaller block
         if (win_w != mcu_w)
         {
-          for (int h = 1; h < win_h-1; h++)
+          for (int h = 1; h < win_h; h++)
           {
-            memcpy(pImg + h * win_w, pImg + (h + 1) * mcu_w, win_w << 1);
+            memcpy(pImg + h * win_w, pImg + h * mcu_w, win_w << 1);
           }
         }
 
@@ -423,9 +423,9 @@ void TFT_eFEX::drawJpeg(const uint8_t arrayname[], uint32_t array_size, int16_t 
         // copy pixels into a smaller block
         if (win_w != mcu_w)
         {
-          for (int h = 1; h < win_h-1; h++)
+          for (int h = 1; h < win_h; h++)
           {
-            memcpy(pImg + h * win_w, pImg + (h + 1) * mcu_w, win_w << 1);
+            memcpy(pImg + h * win_w, pImg + h * mcu_w, win_w << 1);
           }
         }
 
