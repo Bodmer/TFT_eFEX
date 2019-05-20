@@ -263,7 +263,7 @@ void TFT_eFEX::drawJpeg(String filename, int16_t xpos, int16_t ypos, TFT_eSprite
   if (decoded) {
     // render the image onto the screen at given coordinates
 
-    // retrieve infomration about the image
+    // retrieve information about the image
     uint16_t  *pImg;
     uint16_t mcu_w = JpegDec.MCUWidth;
     uint16_t mcu_h = JpegDec.MCUHeight;
@@ -367,7 +367,7 @@ void TFT_eFEX::drawJpeg(const uint8_t arrayname[], uint32_t array_size, int16_t 
   if (decoded) {
     // render the image onto the screen at given coordinates
 
-    // retrieve infomration about the image
+    // retrieve information about the image
     uint16_t  *pImg;
     uint16_t mcu_w = JpegDec.MCUWidth;
     uint16_t mcu_h = JpegDec.MCUHeight;
@@ -642,7 +642,7 @@ void TFT_eFEX::listSPIFFS(void) {
 
   static const char line[] PROGMEM =  "=================================================";
   Serial.println(FPSTR(line));
-  Serial.println(F("  File name               Size"));
+  Serial.println(F("  File name                              Size"));
   Serial.println(FPSTR(line));
 
   while (dir.next()) {
@@ -674,7 +674,7 @@ void TFT_eFEX::listSPIFFS(void) {
   static const char line[] PROGMEM =  "=================================================";
 
   Serial.println(FPSTR(line));
-  Serial.println(F("  File name                Size"));
+  Serial.println(F("  File name                              Size"));
   Serial.println(FPSTR(line));
 
   fs::File root = SPIFFS.open("/");
