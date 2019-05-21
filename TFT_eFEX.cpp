@@ -360,8 +360,9 @@ void TFT_eFEX::drawJpeg(String filename, int16_t xpos, int16_t ypos, TFT_eSprite
 ** Function name:           drawJpeg
 ** Description:             draw a jpeg stored in FLASH onto the TFT
 ***************************************************************************************/
-void TFT_eFEX::drawJpeg(const uint8_t arrayname[], uint32_t array_size, int16_t xpos, int16_t ypos) {
+void TFT_eFEX::drawJpeg(const uint8_t arrayname[], uint32_t array_size, int16_t xpos, int16_t ypos, TFT_eSprite *_spr) {
 
+  if ( (_spr == nullptr) && ((xpos >= _tft->width()) || (ypos >= _tft->height()))) return;
   boolean decoded = JpegDec.decodeArray(arrayname, array_size);
 
   if (decoded) {
@@ -429,7 +430,8 @@ void TFT_eFEX::drawJpeg(const uint8_t arrayname[], uint32_t array_size, int16_t 
           }
         }
 
-        _tft->pushImage(mcu_x, mcu_y, win_w, win_h, pImg);
+        if (_spr == nullptr)  _tft->pushImage(mcu_x, mcu_y, win_w, win_h, pImg);
+        else _spr->pushImage(mcu_x, mcu_y, win_w, win_h, pImg);
       }
       else
       {

@@ -78,7 +78,7 @@ class TFT_eFEX : public TFT_eSPI {
   void     drawJpeg(String filename, int16_t xpos, int16_t ypos, TFT_eSprite *_spr = nullptr);
 
            // Draw a Jpeg stored in a program memory array to the TFT (uses JPEGDecoder library)
-  void     drawJpeg(const uint8_t arrayname[], uint32_t array_size, int16_t xpos, int16_t ypos);
+  void     drawJpeg(const uint8_t arrayname[], uint32_t array_size, int16_t xpos, int16_t ypos, TFT_eSprite *_spr = nullptr);
 
            // List information about a Jpeg file to the Serial port (uses JPEGDecoder library)
   void     jpegInfo(String filename);
