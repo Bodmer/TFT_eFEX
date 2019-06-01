@@ -1,5 +1,5 @@
 {
-  "name": "TFT_eFRX",
+  "name": "TFT_eFEX",
   "version": "0.0.5",
   "keywords": "tft, ePaper, display, ESP8266, NodeMCU, ESP32, M5Stack, ILI9341, ST7735, ILI9163, S6D02A1, ILI9486, ST7789",
   "description": "A TFT_eSPI expansion library for ESP8266 and ESP32",
