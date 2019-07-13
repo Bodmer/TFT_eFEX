@@ -1122,7 +1122,7 @@ bool TFT_eFEX::drawJpg(const uint8_t * jpg_data, size_t jpg_len, uint16_t x, uin
     maxWidth = maxWidth>>(uint8_t)scale;
     maxHeight = maxHeight>>(uint8_t)scale;
 
-    if((x + maxWidth) > width() || (y + maxHeight) > height()){
+    if((x + maxWidth) > _tft->width() || (y + maxHeight) > _tft->height()){
         log_e("Bad dimensions given");
         return false;
     }
@@ -1130,10 +1130,10 @@ bool TFT_eFEX::drawJpg(const uint8_t * jpg_data, size_t jpg_len, uint16_t x, uin
     jpg_file_decoder_t jpeg;
 
     if(!maxWidth){
-        maxWidth = width() - x;
+        maxWidth = _tft->width() - x;
     }
     if(!maxHeight){
-        maxHeight = height() - y;
+        maxHeight = _tft->height() - y;
     }
 
     jpeg.src = jpg_data;
@@ -1172,7 +1172,7 @@ bool TFT_eFEX::drawJpgFile(fs::FS &fs, const char * path, uint16_t x, uint16_t y
     maxWidth = maxWidth>>(uint8_t)scale;
     maxHeight = maxHeight>>(uint8_t)scale;
 
-    if((x + maxWidth) > width() || (y + maxHeight) > height()){
+    if((x + maxWidth) > _tft->width() || (y + maxHeight) > _tft->height()){
         log_e("Bad dimensions given");
         return false;
     }
@@ -1186,10 +1186,10 @@ bool TFT_eFEX::drawJpgFile(fs::FS &fs, const char * path, uint16_t x, uint16_t y
     jpg_file_decoder_t jpeg;
 
     if(!maxWidth){
-        maxWidth = width() - x;
+        maxWidth = _tft->width() - x;
     }
     if(!maxHeight){
-        maxHeight = height() - y;
+        maxHeight = _tft->height() - y;
     }
 
     jpeg.src = &file;
