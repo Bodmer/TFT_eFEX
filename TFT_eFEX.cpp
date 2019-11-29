@@ -1113,7 +1113,6 @@ void TFT_eFEX::drawGradientLine( int32_t x0, int32_t y0, int32_t x1, int32_t y1,
   int32_t err = dx >> 1, ystep = -1, xs = x0, dlen = 0;
 
   if (y0 < y1) ystep = 1;
-
   // Split into steep and not steep for H/V separation
   if (steep) {
     for (; x0 <= x1; x0++) {
@@ -1131,6 +1130,7 @@ void TFT_eFEX::drawGradientLine( int32_t x0, int32_t y0, int32_t x1, int32_t y1,
         }
         dlen = 0; y0 += ystep; xs = x0 + 1;
       }
+      yield();
     }
     if (dlen) {
        _colorstart = colorAt( _y0, _x0, _y1, _x1, y0, xs, colorstart, colorend );
@@ -1153,6 +1153,7 @@ void TFT_eFEX::drawGradientLine( int32_t x0, int32_t y0, int32_t x1, int32_t y1,
         }
         dlen = 0; y0 += ystep; xs = x0 + 1;
       }
+      yield();
     }
     if (dlen) {
       _colorstart = colorAt( _x0, _y0, _x1, _y1, xs, y0, colorstart, colorend );
@@ -1168,12 +1169,15 @@ void TFT_eFEX::drawGradientHLine( int32_t x, int32_t y, int32_t w, RGBColor colo
   if (x < 0) { w += x; x = 0; }
   if ((x + w) > width())  w = width()  - x;
   if (w < 1) return;
+  _tft->startWrite();
   for( int32_t i = x; i < x+w; i++ ) {
     uint8_t r = map( i, x, x+w, colorstart.r, colorend.r );
     uint8_t g = map( i, x, x+w, colorstart.g, colorend.g );
     uint8_t b = map( i, x, x+w, colorstart.b, colorend.b );
     _tft->drawPixel( i, y, _tft->color565( r, g, b ) );
+    yield();
   }
+  _tft->endWrite();
 }
 
 
@@ -1182,12 +1186,15 @@ void TFT_eFEX::drawGradientVLine( int32_t x, int32_t y, int32_t h, RGBColor colo
   if ( y < 0 ) { h += y; y = 0; }
   if ( (y + h) > height() ) h = height() - y;
   if ( h < 1 ) return;
+  _tft->startWrite();
   for( int32_t i = y; i < y+h; i++ ) {
     uint8_t r = map( i, y, y+h, colorstart.r, colorend.r );
     uint8_t g = map( i, y, y+h, colorstart.g, colorend.g );
     uint8_t b = map( i, y, y+h, colorstart.b, colorend.b );
     _tft->drawPixel( x, i, _tft->color565( r, g, b ) );
+    yield();
   }
+  _tft->endWrite();
 }
 
 
