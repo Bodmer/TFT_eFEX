@@ -11,6 +11,18 @@ TFT_eSPI tft = TFT_eSPI();       // Create object "tft"
 TFT_eFEX  fex = TFT_eFEX(&tft);    // Create TFT_eFEX object "fex" with pointer to "tft" object
 
 
+RGBColor colorstart;
+RGBColor colorend;
+uint8_t margin = 50;
+uint16_t boxw = (tft.width()/2)-margin;
+uint16_t boxh = (tft.height()/2)-margin;
+uint16_t centerx = tft.width()/2;
+uint16_t centery = tft.height()/2;
+uint16_t xpos = 50;
+uint16_t ypos = 50;
+byte r = 25;
+
+
 void randomColors( RGBColor &colorstart, RGBColor &colorend ) {
   colorstart = { 128, byte(random(128)), byte(random(128)) }; // create some random color
   colorend = { byte(random(128)+127), 255, byte(random(128)+127) }; // create some random color
@@ -92,18 +104,6 @@ void setup(void) {
 
 // =========================================================================
 void loop() {
-
-  RGBColor colorstart;
-  RGBColor colorend;
-  uint8_t margin = 50;
-  uint16_t boxw = (tft.width()/2)-margin;
-  uint16_t boxh = (tft.height()/2)-margin;
-  uint16_t centerx = tft.width()/2;
-  uint16_t centery = tft.height()/2;
-  uint16_t xpos = 50;
-  uint16_t ypos = 50;
-  byte r = 25;
-
   tft.fillScreen(TFT_BLACK);
 
   randomColors( colorstart, colorend );
