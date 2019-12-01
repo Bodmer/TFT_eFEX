@@ -58,20 +58,6 @@ typedef enum {
 } jpeg_div_t;
 #endif
 
-struct RGBColor { // for gradients
-  uint8_t r;
-  uint8_t g;
-  uint8_t b;
-  void set( uint8_t r_, uint8_t g_, uint8_t b_ ) {
-    r = r_; g = g_;  b = b_;
-  }
-  bool operator==(const RGBColor& color) {
-    return color.r == r && color.g == g && color.b == b;
-  }
-};
-
-
-
 // End of screens erver setup
 
 class TFT_eFEX : public TFT_eSPI {
@@ -128,13 +114,6 @@ class TFT_eFEX : public TFT_eSPI {
            // Draw a jpeg stored in a file using the ESP32 native decoder, can crop and scale (Tested with SPIFFS file)
   bool     drawJpgFile(fs::FS &fs, const char * path, uint16_t x=0, uint16_t y=0, uint16_t maxWidth=0, uint16_t maxHeight=0, uint16_t offX=0, uint16_t offY=0, jpeg_div_t scale=JPEG_DIV_NONE);
 #endif
-
-           // draw a line with linear gradient from colorstart to colorend, kinda slow
-  void     drawGradientLine(int32_t x0, int32_t y0, int32_t x1, int32_t y1, RGBColor colorstart, RGBColor colorend);
-  void     drawGradientHLine(int32_t x, int32_t y, int32_t w, RGBColor colorstart, RGBColor colorend);
-  void     drawGradientVLine( int32_t x, int32_t y, int32_t h, RGBColor colorstart, RGBColor colorend);
-           // calculate gradient color value at given coordinates for a gradient line
-  RGBColor colorAt( int32_t x0, int32_t y0, int32_t x1, int32_t y1, int32_t x2, int32_t y2, RGBColor colorstart, RGBColor colorend );
 
   private:
 
