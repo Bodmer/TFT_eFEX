@@ -1165,9 +1165,9 @@ void TFT_eFEX::drawGradientLine( int32_t x0, int32_t y0, int32_t x1, int32_t y1,
 
 
 void TFT_eFEX::drawGradientHLine( int32_t x, int32_t y, int32_t w, RGBColor colorstart, RGBColor colorend ) {
-  if ((y < 0) || (x >= width()) || (y >= height())) return;
+  if ((y < 0) || (x >= _tft->width()) || (y >= height())) return;
   if (x < 0) { w += x; x = 0; }
-  if ((x + w) > width())  w = width()  - x;
+  if ((x + w) > _tft->width())  w = _tft->width()  - x;
   if (w < 1) return;
   _tft->startWrite();
   for( int32_t i = x; i < x+w; i++ ) {
@@ -1182,9 +1182,9 @@ void TFT_eFEX::drawGradientHLine( int32_t x, int32_t y, int32_t w, RGBColor colo
 
 
 void TFT_eFEX::drawGradientVLine( int32_t x, int32_t y, int32_t h, RGBColor colorstart, RGBColor colorend ) {
-  if ( ( x < 0 ) || ( x >= width() ) || ( y >= height() ) ) return;
+  if ( ( x < 0 ) || ( x >= _tft->width() ) || ( y >= _tft->height() ) ) return;
   if ( y < 0 ) { h += y; y = 0; }
-  if ( (y + h) > height() ) h = height() - y;
+  if ( (y + h) > _tft->height() ) h = _tft->height() - y;
   if ( h < 1 ) return;
   _tft->startWrite();
   for( int32_t i = y; i < y+h; i++ ) {
