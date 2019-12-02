@@ -1165,7 +1165,7 @@ void TFT_eFEX::drawGradientLine( int32_t x0, int32_t y0, int32_t x1, int32_t y1,
 
 
 void TFT_eFEX::drawGradientHLine( int32_t x, int32_t y, int32_t w, RGBColor colorstart, RGBColor colorend ) {
-  if ((y < 0) || (x >= _tft->width()) || (y >= height())) return;
+  if ((y < 0) || (x >= _tft->width()) || (y >= _tft->height())) return;
   if (x < 0) { w += x; x = 0; }
   if ((x + w) > _tft->width())  w = _tft->width()  - x;
   if (w < 1) return;
