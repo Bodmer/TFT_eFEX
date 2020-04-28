@@ -176,7 +176,7 @@ void TFT_eFEX::drawBmp(String filename, int16_t x, int16_t y, TFT_eSprite *_spr)
     {
       y += h - 1;
       
-      bool oldSwapBytes = _tft->getSwapBytes();
+      bool tftSwapBytes = _tft->getSwapBytes();
 
       _tft->setSwapBytes(_spr == nullptr);
 
@@ -205,7 +205,7 @@ void TFT_eFEX::drawBmp(String filename, int16_t x, int16_t y, TFT_eSprite *_spr)
         else                 _spr->pushImage(x, y--, w, 1, (uint16_t*)lineBuffer);
       }
 
-      _tft->setSwapBytes(oldSwapBytes); // Restore original setting
+      _tft->setSwapBytes(tftSwapBytes); // Restore original setting
 
       //Serial.print("Loaded in "); Serial.print(millis() - startTime);
       //Serial.println(" ms");
@@ -283,6 +283,9 @@ void TFT_eFEX::drawJpeg(String filename, int16_t xpos, int16_t ypos, TFT_eSprite
     // record the current time so we can measure how long it takes to draw an image
     uint32_t drawTime = millis();
 
+    bool tftSwapBytes = _tft->getSwapBytes();
+    bool sprSwapBytes;
+
     // Retrieve the width and height of the display/Sprite
     int32_t disp_w = _tft->width();
     int32_t disp_h = _tft->height();
@@ -290,10 +293,10 @@ void TFT_eFEX::drawJpeg(String filename, int16_t xpos, int16_t ypos, TFT_eSprite
     {
       disp_w = _spr->width(); 
       disp_h = _spr->height();
+      sprSwapBytes = _spr->getSwapBytes();
+      _spr->setSwapBytes(true);
     }
-
-    bool oldSwapBytes = _tft->getSwapBytes();
-    _tft->setSwapBytes(true);
+    _tft->setSwapBytes(false);
 
     // save the coordinate of the right and bottom edges to assist image cropping
     // to the screen size
@@ -339,7 +342,8 @@ void TFT_eFEX::drawJpeg(String filename, int16_t xpos, int16_t ypos, TFT_eSprite
       }
     }
 
-    _tft->setSwapBytes(oldSwapBytes); // Restore original setting
+    if (_spr != nullptr) _spr->setSwapBytes(sprSwapBytes); // Restore original setting
+    _tft->setSwapBytes(tftSwapBytes); // Restore original setting
 
     // calculate how long it took to draw the image
     drawTime = millis() - drawTime; // Calculate the time it took
@@ -392,7 +396,7 @@ void TFT_eFEX::drawJpeg(const uint8_t arrayname[], uint32_t array_size, int16_t 
     int32_t disp_w = _tft->width();
     int32_t disp_h = _tft->height();
 
-    bool oldSwapBytes = _tft->getSwapBytes();
+    bool tftSwapBytes = _tft->getSwapBytes();
     _tft->setSwapBytes(true);
 
     // save the coordinate of the right and bottom edges to assist image cropping
@@ -439,7 +443,7 @@ void TFT_eFEX::drawJpeg(const uint8_t arrayname[], uint32_t array_size, int16_t 
       }
     }
 
-    _tft->setSwapBytes(oldSwapBytes); // Restore original setting
+    _tft->setSwapBytes(tftSwapBytes); // Restore original setting
 
     // calculate how long it took to draw the image
     drawTime = millis() - drawTime; // Calculate the time it took
