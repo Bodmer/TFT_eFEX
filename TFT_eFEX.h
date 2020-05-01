@@ -6,6 +6,9 @@
 // See license.txt in root folder of library
 /***************************************************************************************/
 
+#ifndef _TFT_eFEXH_
+#define _TFT_eFEXH_
+
 #include <TFT_eSPI.h>
 
 #include <JPEGDecoder.h>
@@ -131,3 +134,5 @@ int32_t rtl_cursorX = 0; // RTL cursor positions
 int32_t rtl_cursorY = 0;
 
 };
+
+#endif //ifndef _TFT_eFEXH_
