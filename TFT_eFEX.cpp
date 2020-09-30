@@ -294,7 +294,7 @@ void TFT_eFEX::drawJpeg(String filename, int16_t xpos, int16_t ypos, TFT_eSprite
       disp_w = _spr->width(); 
       disp_h = _spr->height();
       sprSwapBytes = _spr->getSwapBytes();
-      _spr->setSwapBytes(true);
+      _spr->setSwapBytes(false);
     }
     _tft->setSwapBytes(false);
 
