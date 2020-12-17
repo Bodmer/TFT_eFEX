@@ -287,11 +287,11 @@ void TFT_eFEX::drawJpeg(String filename, int16_t xpos, int16_t ypos, TFT_eSprite
     bool sprSwapBytes;
 
     // Retrieve the width and height of the display/Sprite
-    int32_t disp_w = _tft->width();
+    //int32_t disp_w = _tft->width();
     int32_t disp_h = _tft->height();
     if (_spr != nullptr)
     {
-      disp_w = _spr->width(); 
+      //disp_w = _spr->width(); 
       disp_h = _spr->height();
       sprSwapBytes = _spr->getSwapBytes();
       _spr->setSwapBytes(false);
@@ -393,7 +393,7 @@ void TFT_eFEX::drawJpeg(const uint8_t arrayname[], uint32_t array_size, int16_t 
     uint32_t drawTime = millis();
 
     // Retrieve the width and height of the display/Sprite
-    int32_t disp_w = _tft->width();
+    //int32_t disp_w = _tft->width();
     int32_t disp_h = _tft->height();
 
     bool tftSwapBytes = _tft->getSwapBytes();
@@ -729,6 +729,7 @@ void TFT_eFEX::listSPIFFS(void) {}
 #endif
 
 
+#ifdef SMOOTH_FONT // These functions require smooth fonts to be enabled
 /***************************************************************************************
 ** Function name:           setCursorRTL
 ** Description:             Set the RTL cursor position
@@ -806,7 +807,7 @@ void TFT_eFEX::drawStringRTL(const char *string, int32_t *x, int32_t *y)
     }
 
     _tft->setTextDatum(datum);
-    _tft->setCursor(cx, cx);
+    _tft->setCursor(cx, cy);
 
     *x = poX;
     *y = poY;
@@ -887,13 +888,13 @@ void TFT_eFEX::drawStringLTR(const char *string, int32_t *x, int32_t *y)
     }
 
     _tft->setTextDatum(datum);
-    _tft->setCursor(cx, cx);
+    _tft->setCursor(cx, cy);
 
     *x = poX;
     *y = poY;
   }
 }
-
+#endif // smooth font enabled
 
 //====================================================================================
 //                           Screen server call with no filename
