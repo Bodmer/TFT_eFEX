@@ -104,6 +104,8 @@ class TFT_eFEX : public TFT_eSPI {
   void     setCursorRTL(int32_t cx, int32_t cy);
   void     drawStringRTL(const String& string);
   void     drawStringRTL(const char *string, int32_t *x, int32_t *y);
+  void     drawStringRTLAr(const String& string);
+  void     drawStringRTLAr(const char *string, int32_t *x, int32_t *y);
   void     drawStringLTR(const String& string);
   void     drawStringLTR(const char *string, int32_t *x, int32_t *y);
 

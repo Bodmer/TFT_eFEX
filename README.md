@@ -53,6 +53,11 @@ The extra functions are:
 
   void     drawStringLTR(const char *string, int32_t *x, int32_t *y);
 
+  // Support Arabic Right To Left (RTL) character rendering 
+  
+  void     drawStringRTLAr(const String& string);
+  
+  void     drawStringRTLAR(const char *string, int32_t *x, int32_t *y);
 
 
 **For ESP32 only (see "Jpeg_ESP32" example):**
