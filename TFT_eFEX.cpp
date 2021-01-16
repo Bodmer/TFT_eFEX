@@ -814,6 +814,171 @@ void TFT_eFEX::drawStringRTL(const char *string, int32_t *x, int32_t *y)
   }
 }
 
+/***************************************************************************************
+** Function name:           drawStringRTLAr
+** Description:             Draw the string Arabic RTL and update cursor coordinates
+***************************************************************************************/
+void TFT_eFEX::drawStringRTLAr(const String &string)
+{
+  int16_t len = string.length() + 2;
+  // Serial.print("Size:");
+  // Serial.println((String)len);
+  char sbuffer[len];
+  string.toCharArray(sbuffer, len);
+  drawStringRTLAr(sbuffer, &rtl_cursorX, &rtl_cursorY);
+}
+/***************************************************************************************
+** Function name:           isFrom
+** Description:             If the font has a From 
+***************************************************************************************/
+
+bool isFrom(uint16_t ch, int loc = INITIAL)
+{
+  if(!(ch >= 0x0621 && ch <= 0x06d5)){
+    return false;
+  }
+  uint16_t st = 0;
+  if((ch - 0x0621)>0){
+    st =0;
+  }
+  for (uint16_t i = st; i < CODECOUNT; i++) //Optimize finidng speed
+  {
+    if (codes[i][0] == ch)
+    {
+      if (codes[i][loc]>0)
+        return true;
+      else
+        return false;
+    }
+  }
+  return false;
+}
+/***************************************************************************************
+** Function name:           Location
+** Description:             Find the location of the current letter
+***************************************************************************************/
+uint8_t Location(uint16_t ch, uint16_t NextChar, uint16_t PrevChar)
+{
+  /*
+  ('<isolated>', '<initial>', '<medial>', '<final>')
+    */
+  uint8_t stat;
+  bool p = isFrom(PrevChar, INITIAL);
+  bool n = isFrom(NextChar, FINAL);
+  // Serial.print("$");
+  // Serial.print(NextChar);
+  // Serial.print("$");
+  // Serial.print(PrevChar);
+  // Serial.print("$");
+  // Serial.print(PrevChar -  0x0620);
+  // Serial.print("P");
+  // Serial.println((String) p + (String) n );
+
+  if (p) // initail
+  {
+    if (n) // end
+      stat = MEDIAL; 
+    else
+      stat = FINAL;
+  }
+  else if (n)
+    stat = INITIAL; //Final
+  else
+    stat = ISOLATED; //Medial
+  
+
+  return stat;
+}
+/***************************************************************************************
+** Function name:           drawStringRTLAr
+** Description:             Draw the string Arabic RTL at defined coordinates
+***************************************************************************************/
+// Must call with variables, &x and &y
+void TFT_eFEX::drawStringRTLAr(const char *string, int32_t *x, int32_t *y)
+{
+  int32_t poX = *x;
+  int32_t poY = *y;
+
+  int16_t len = strlen(string);
+
+  if (_tft->fontLoaded)
+  {
+    uint8_t datum = _tft->getTextDatum();
+    int16_t cx = _tft->getCursorX();
+    int16_t cy = _tft->getCursorY();
+    _tft->setTextDatum(TL_DATUM);
+    uint16_t n = 0;
+    uint16_t PrevChar = '\0';
+    uint16_t NextChar = '\0';
+    while (n < len)
+    {
+      uint16_t uniCode = _tft->decodeUTF8((uint8_t*)string, &n, len - n);
+      uint16_t nPefore = n;
+      if (n < len)
+      {
+        NextChar = _tft->decodeUTF8((uint8_t *)string, &nPefore, len - nPefore);
+      }else{
+        NextChar = '\0';
+      }
+      if (uniCode >= 0x0621 && uniCode <= 0x06d5) //Replace Char
+      {
+        uint8_t loc = Location(uniCode,NextChar, PrevChar);
+        PrevChar = uniCode;
+        // Serial.print("X");
+        // Serial.print(uniCode, HEX);
+        // Serial.print("L");
+        // Serial.print((int)loc, HEX);
+        // Serial.print("G");
+        // Serial.print(uniCode - 0x0622, HEX);
+        for(int i=0;i<CODECOUNT;i++){
+          if (codes[i][0] == uniCode)
+          {
+            if (codes[i][loc])
+            uniCode =codes[i][loc];
+          }
+        }
+        //search for letter here
+        // Serial.print("N");
+        // Serial.println(uniCode, HEX);
+        // delay(5);
+        // yield();
+      }else{
+        PrevChar = uniCode;
+      }
+      uint16_t gNum = 0;
+      bool found = _tft->getUnicodeIndex(uniCode, &gNum);
+
+      if (uniCode == 0x20)
+      {
+        poX -= _tft->gFont.spaceWidth;
+      }
+      else if (uniCode == '\n')
+      {
+        poX = _tft->width() - 1;
+        poY += _tft->gFont.yAdvance;
+      }else if (found){
+        poX -= (_tft->gWidth[gNum] + _tft->gdX[gNum]);
+
+        if (poX < 0)
+        {
+          poX = _tft->width() - (_tft->gWidth[gNum] + _tft->gdX[gNum]);
+          poY += _tft->gFont.yAdvance;
+          if (poY >= _tft->height())
+            poY = 0;
+        }
+
+        _tft->setCursor(poX, poY);
+        _tft->drawGlyph(uniCode);
+      }
+    }
+
+    _tft->setTextDatum(datum);
+    _tft->setCursor(cx, cy);
+
+    *x = poX;
+    *y = poY;
+  }
+}
 
 /***************************************************************************************
 ** Function name:           setCursorLTR
